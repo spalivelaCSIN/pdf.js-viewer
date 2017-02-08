@@ -14268,6 +14268,9 @@ var PDFPageView = (function PDFPageViewClosure() {
     beforePrint: function PDFPageView_beforePrint() {
       var pdfPage = this.pdfPage;
 
+      // var isIE11 = false;//navigator.userAgent.indexOf(".NET CLR") > -1;
+      var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+
       var viewport = pdfPage.getViewport(1);
       // Use the same hack we use for high dpi displays for printing to get
       // better output until bug 811002 is fixed in FF.
@@ -14279,18 +14282,39 @@ var PDFPageView = (function PDFPageViewClosure() {
       canvas.height = Math.floor(viewport.height) * PRINT_OUTPUT_SCALE;
 
       // The rendered size of the canvas, relative to the size of canvasWrapper.
-      canvas.style.width = (PRINT_OUTPUT_SCALE * 100) + '%';
-      canvas.style.height = (PRINT_OUTPUT_SCALE * 100) + '%';
+      if (isChrome)
+      {
+        canvas.style.width = (PRINT_OUTPUT_SCALE * 100) + '%';
+        canvas.style.height = (PRINT_OUTPUT_SCALE * 100) + '%';
+      } else {
+        canvas.style.width = (PRINT_OUTPUT_SCALE/2 * 100) + '%';
+        canvas.style.height = (PRINT_OUTPUT_SCALE/2 * 100) + '%';
+      }
 
-      var cssScale = 'scale(' + (1 / PRINT_OUTPUT_SCALE) + ', ' +
-                                (1 / PRINT_OUTPUT_SCALE) + ')';
+
+      var cssScale = 'scale(' + (PRINT_OUTPUT_SCALE/2) + ', ' +(PRINT_OUTPUT_SCALE/2) + ')';
+      if(isChrome){
+        // cssScale = 'scale(1, 1)';
+        cssScale = 'scale(' + (1 / PRINT_OUTPUT_SCALE) + ', ' +
+                                  (1 / PRINT_OUTPUT_SCALE) + ')';
+      }
+
       CustomStyle.setProp('transform' , canvas, cssScale);
       CustomStyle.setProp('transformOrigin' , canvas, '0% 0%');
 
       var printContainer = document.getElementById('printContainer');
       var canvasWrapper = document.createElement('div');
-      canvasWrapper.style.width = viewport.width + 'pt';
-      canvasWrapper.style.height = viewport.height + 'pt';
+
+      if (isChrome)
+      {
+        canvasWrapper.style.width = viewport.width + 'pt';
+        canvasWrapper.style.height = viewport.height + 'pt';
+          // canvasWrapper.style.width = viewport.width + 'px';    // changed 'pt' -> 'px'
+          // canvasWrapper.style.height = viewport.height + 'px';  // changed 'pt' -> 'px'
+      } else {
+        canvasWrapper.width = Math.floor(canvas.width);
+        canvasWrapper.height = Math.floor(canvas.height);
+      }
       canvasWrapper.appendChild(canvas);
       printContainer.appendChild(canvasWrapper);
 
@@ -17206,7 +17230,8 @@ var PDFViewerApplication = {
       console.warn('Not all pages have the same size. The printed result ' +
           'may be incorrect!');
     }
-
+    var isIE11 = navigator.userAgent.indexOf(".NET CLR") > -1;
+    var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
     // Insert a @page + size rule to make sure that the page size is correctly
     // set. Note that we assume that all pages have the same size, because
     // variable-size pages are not supported yet (at least in Chrome & Firefox).
@@ -17221,13 +17246,25 @@ var PDFViewerApplication = {
     this.pageStyleSheet.textContent =
       // "size:<width> <height>" is what we need. But also add "A4" because
       // Firefox incorrectly reports support for the other value.
-      '@supports ((size:A4) and (size:1pt 1pt)) {' +
-      '@page { size: ' + pageSize.width + 'pt ' + pageSize.height + 'pt;}' +
+      '@supports ((size:A4) and (size:1px 1px)) {' +
+      '@page { size: ' + pageSize.width + 'px ' + pageSize.height + 'px;}' +
       // The canvas and each ancestor node must have a height of 100% to make
       // sure that each canvas is printed on exactly one page.
       '#printContainer {height:100%}' +
       '#printContainer > div {width:100% !important;height:100% !important;}' +
       '}';
+    if(isChrome){
+      this.pageStyleSheet.textContent =
+        // "size:<width> <height>" is what we need. But also add "A4" because
+        // Firefox incorrectly reports support for the other value.
+        '@supports ((size:A4) and (size:1pt 1pt)) {' +
+        '@page { size: ' + pageSize.width + 'pt ' + pageSize.height + 'pt;}' +
+        // The canvas and each ancestor node must have a height of 100% to make
+        // sure that each canvas is printed on exactly one page.
+        '#printContainer {height:100%}' +
+        '#printContainer > div {width:100% !important;height:100% !important;}' +
+        '}';
+    }
     body.appendChild(this.pageStyleSheet);
 
     for (i = 0, ii = this.pagesCount; i < ii; ++i) {
@@ -17809,7 +17846,7 @@ window.addEventListener('pagechange', function pagechange(evt) {
 function handleMouseWheel(evt) {
   // Ignore mousewheel event if pdfViewer isn't loaded
   if (!PDFViewerApplication.pdfViewer) return;
-  
+
   var MOUSE_WHEEL_DELTA_FACTOR = 40;
   var ticks = (evt.type === 'DOMMouseScroll') ? -evt.detail :
               evt.wheelDelta / MOUSE_WHEEL_DELTA_FACTOR;
@@ -18092,5 +18129,3 @@ window.addEventListener('afterprint', function afterPrint(evt) {
     window.requestAnimationFrame(resolve);
   });
 })();
-
-

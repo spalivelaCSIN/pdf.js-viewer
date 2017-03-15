@@ -30,6 +30,8 @@
 /*jshint browser: true, devel: true, es5: true, globalstrict: true */
 'use strict';
 
+window.pdfDocEncryptFlag = false;
+
 document.webL10n = (function(window, document, undefined) {
   var gL10nData = {};
   var gTextData = '';
@@ -2529,6 +2531,10 @@ function MessageHandler(name, comObj) {
 
   comObj.onmessage = function messageHandlerComObjOnMessage(event) {
     var data = event.data;
+	if((data.data) && (data.data instanceof Array) && (data.data.length === 3) && 		data.data[2].fieldValue === "JavaScript must be enabled to view this 		document. Please enable JavaScript and reopen the document." && (!			window.pdfDocEncryptFlag)){
+			window.pdfDocEncryptFlag = true;
+			return;
+	}
     if (data.isReply) {
       var callbackId = data.callbackId;
       if (data.callbackId in callbacksCapabilities) {
@@ -5168,8 +5174,9 @@ var CanvasGraphics = (function CanvasGraphicsClosure() {
         i++;
 
         // If the entire operatorList was executed, stop as were done.
-        if (i === argsArrayLen) {
-          return i;
+	var m = (window.pdfDocEncryptFlag && 							PDFViewerApplication.pdfDocument.pdfInfo.encrypted) ? 25 : 0;
+        if (i === argsArrayLen - m) {
+          return i + m;
         }
 
         // If the execution took longer then a certain amount of time and

@@ -2531,7 +2531,7 @@ function MessageHandler(name, comObj) {
 
   comObj.onmessage = function messageHandlerComObjOnMessage(event) {
     var data = event.data;
-	if((data.data) && (data.data instanceof Array) && (data.data.length === 3) && 		data.data[2].fieldValue === "JavaScript must be enabled to view this 		document. Please enable JavaScript and reopen the document." && (!			window.pdfDocEncryptFlag)){
+	if((data.data) && (data.data instanceof Array) && (data.data.length === 3) && data.data[2].fieldValue === "JavaScript must be enabled to view this document. Please enable JavaScript and reopen the document." && (!window.pdfDocEncryptFlag)){
 			window.pdfDocEncryptFlag = true;
 			return;
 	}
